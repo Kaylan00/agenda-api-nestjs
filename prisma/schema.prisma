@@ -1,0 +1,65 @@
+// Modelo de dados da API de agendamentos.
+// Valores em dinheiro são sempre guardados em centavos (Int) para evitar erros de ponto flutuante.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AppointmentStatus {
+  AGENDADO
+  CONFIRMADO
+  CONCLUIDO
+  CANCELADO
+}
+
+model Professional {
+  id           Int           @id @default(autoincrement())
+  name         String
+  createdAt    DateTime      @default(now())
+  appointments Appointment[]
+}
+
+model Service {
+  id              Int           @id @default(autoincrement())
+  name            String
+  durationMinutes Int
+  priceCents      Int
+  createdAt       DateTime      @default(now())
+  appointments    Appointment[]
+}
+
+model Client {
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        @unique
+  phone        String?
+  createdAt    DateTime      @default(now())
+  appointments Appointment[]
+}
+
+model Appointment {
+  id             Int               @id @default(autoincrement())
+  professionalId Int
+  serviceId      Int
+  clientId       Int
+  startsAt       DateTime
+  endsAt         DateTime
+  status         AppointmentStatus @default(AGENDADO)
+  // Preço do serviço no momento da marcação (o catálogo pode mudar depois sem alterar o histórico).
+  priceCents     Int
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  professional Professional @relation(fields: [professionalId], references: [id])
+  service      Service      @relation(fields: [serviceId], references: [id])
+  client       Client       @relation(fields: [clientId], references: [id])
+
+  // Acelera a busca de conflito de horário e as listagens por profissional/dia.
+  @@index([professionalId, startsAt])
+  @@index([status])
+}
