@@ -20,11 +20,10 @@ async function main(): Promise<void> {
   await prisma.$executeRaw`
     TRUNCATE TABLE "Appointment", "Client", "Service", "Professional" RESTART IDENTITY CASCADE`;
 
-  const [thor, bruna, caio] = await Promise.all(
-    ['Thor Almeida', 'Bruna Costa', 'Caio Ribeiro'].map((name) =>
-      prisma.professional.create({ data: { name } }),
-    ),
-  );
+  // Criação em sequência para os ids seguirem a ordem da lista.
+  const thor = await prisma.professional.create({ data: { name: 'Thor Almeida' } });
+  const bruna = await prisma.professional.create({ data: { name: 'Bruna Costa' } });
+  const caio = await prisma.professional.create({ data: { name: 'Caio Ribeiro' } });
 
   const [corte, barba, combo, sobrancelha, hidratacao] = [
     await prisma.service.create({
@@ -52,11 +51,10 @@ async function main(): Promise<void> {
     ['Pedro Henrique', 'pedro@example.com', null],
     ['Felipe Andrade', 'felipe@example.com', '27999990006'],
   ];
-  const clients = await Promise.all(
-    clientData.map(([name, email, phone]) =>
-      prisma.client.create({ data: { name, email, phone } }),
-    ),
-  );
+  const clients = [];
+  for (const [name, email, phone] of clientData) {
+    clients.push(await prisma.client.create({ data: { name, email, phone } }));
+  }
 
   type Seed = [
     professionalId: number,
